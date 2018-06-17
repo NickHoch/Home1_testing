@@ -17,7 +17,7 @@ namespace Home1_testing
     {
         public string Name { get; set; }
     }
-    class Robot : Unit
+    public class Robot : Unit
     {
         public static double Coefficient { get; set; } = 3;
         public override string ToString()
@@ -25,30 +25,42 @@ namespace Home1_testing
             return $"Robot {Name}";
         }
     }
-    class Colonist : Unit
+    public class Colonist : Unit
     {
         public bool Gender { get; set; }
         public int Age { get; set; }
         public override string ToString()
         {
             var genderString = Gender ? "male" : "female";
-            return $"Miner {Name} {Age} {genderString}";
+            return $"{Name} {Age} {genderString}";
         }
     }
-    class Miner : Colonist
+    public class Miner : Colonist
     {
         public static double Coefficient { get; set; } = 1;
+        public override string ToString()
+        {
+            return "Miner " + base.ToString();
+        }
     }
-    class Builder : Colonist
+    public class Builder : Colonist
     {
         public static double Coefficient { get; set; } = 0.8;
+        public override string ToString()
+        {
+            return "Builder " + base.ToString();
+        }
     }
-    class Cook : Colonist
+    public class Cook : Colonist
     {
         public static double Coefficient { get; set; } = 0.5;
+        public override string ToString()
+        {
+            return "Cook " + base.ToString();
+        }
     }
 
-    interface IExpandeable
+    interface IExpandable
     {
         int LocateSetters(ICollection<Unit> units);
     }
@@ -62,23 +74,62 @@ namespace Home1_testing
         double CalculateProd(ICollection<Unit> units, int period);
     }
 
-    public abstract class Colony : IExpandeable, IReduceable
+    public abstract class Colony : IExpandable, IReduceable
     {
+        private const int quantityUnits = 10;
         public ICollection<Unit> units = new List<Unit>();
+        private UnitType[] typeArr = new UnitType[quantityUnits]
+        {
+            UnitType.Builder,
+            UnitType.Miner,
+            UnitType.Cook,
+            UnitType.Miner,
+            UnitType.Robot,
+            UnitType.Cook,
+            UnitType.Builder,
+            UnitType.Robot,
+            UnitType.Miner,
+            UnitType.Cook
+        };
         public Colony()
         {
-            units = UnitFactory.GetUnits(10);
+            for (int i = 0; i < quantityUnits; i++)
+            {                
+                //UnitType type = (UnitType)Program.rand.Next(0, 4);
+                switch (typeArr[i])
+                {
+                    case UnitType.Robot:
+                        units.Add(UnitFactory.GetUnit(UnitType.Robot));
+                        break;
+                    case UnitType.Miner:
+                        units.Add(UnitFactory.GetUnit(UnitType.Miner));
+                        break;
+                    case UnitType.Builder:
+                        units.Add(UnitFactory.GetUnit(UnitType.Builder));
+                        break;
+                    case UnitType.Cook:
+                        units.Add(UnitFactory.GetUnit(UnitType.Cook));
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
         public int LocateSetters(ICollection<Unit> unitsToAdd)
         {
-            units.ToList().AddRange(unitsToAdd);
+            (units as List<Unit>).AddRange(unitsToAdd);
             return units.Count();
         }
         public int RemoteSetters(int count)
         {
             for (int i = 0; i < count; i++)
             {
-                units.ToList().RemoveAt(Program.rand.Next(0, units.Count()));
+                if(units.Count() < 1)
+                {
+                    return -1;
+                }
+                int index = Program.rand.Next(0, units.Count());
+                (units as List<Unit>).RemoveAt(index);
             }
             return units.Count();
         }
@@ -86,11 +137,15 @@ namespace Home1_testing
         {
             for (int i = 0; i < units.Count() && count > 0; i++)
             {
-                if (units.ToList()[i].GetType() == type)
+                if ((units as List<Unit>)[i].GetType() == type)
                 {
-                    units.Remove(units.ToList()[i]);
+                    units.Remove((units as List<Unit>)[i]);
                     count--;
                 }
+            }
+            if(count > 0)
+            {
+                return -1;
             }
             return units.Count();
         }
@@ -101,6 +156,10 @@ namespace Home1_testing
         public double CalculateProd(ICollection<Unit> units, int period)
         {
             double quantityProd = 0d;
+            if(units == null)
+            {
+                return -1;
+            }
             foreach (var item in units)
             {
                 if (item is Robot)
@@ -146,7 +205,8 @@ namespace Home1_testing
                 {
                     quantityBabes = men;
                 }
-                unitsTest.Add(ColonistsFactory.GetColonist());
+                UnitType type = (UnitType)Program.rand.Next(1, 4);
+                unitsTest.Add(UnitFactory.GetUnit(type));
             }
             return unitsTest.Count();
         }
@@ -207,73 +267,6 @@ namespace Home1_testing
                 default:
                     return null;
             }
-        }       
-        public static ICollection<Unit> GetUnits(int quantityUnits)
-        {
-            ICollection<Unit> units = new List<Unit>();
-            for (int i = 0; i < quantityUnits; i++)
-            {
-                UnitType type = (UnitType)Program.rand.Next(0, 4);
-                switch (type)
-                {
-                    case UnitType.Robot:
-                        units.Add(GetUnit(UnitType.Robot));
-                        break;
-                    case UnitType.Miner:
-                        units.Add(GetUnit(UnitType.Miner));
-                        break;
-                    case UnitType.Builder:
-                        units.Add(GetUnit(UnitType.Builder));
-                        break;
-                    case UnitType.Cook:
-                        units.Add(GetUnit(UnitType.Cook));
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return units;
-        }
-    }
-    class ColonistsFactory
-    {
-        //public static ICollection<Unit> GetColonists(int quantityColonists)
-        //{
-        //    ICollection<Unit> colonists = new List<Unit>();
-        //    for (int i = 0; i < quantityColonists; i++)
-        //    {
-        //        UnitType type = (UnitType)Program.rand.Next(1, 4);
-        //        switch (type)
-        //        {
-        //            case UnitType.Miner:
-        //                colonists.Add(UnitFactory.GetUnit(UnitType.Miner));
-        //                break;
-        //            case UnitType.Builder:
-        //                colonists.Add(UnitFactory.GetUnit(UnitType.Builder));
-        //                break;
-        //            case UnitType.Cook:
-        //                colonists.Add(UnitFactory.GetUnit(UnitType.Cook));
-        //                break;
-        //            default:
-        //                break;
-        //        }
-        //    }
-        //    return colonists;
-        //}
-        public static Unit GetColonist()
-        {
-            UnitType type = (UnitType)Program.rand.Next(1, 4);
-            switch (type)
-            {
-                case UnitType.Miner:
-                    return UnitFactory.GetUnit(UnitType.Miner);
-                case UnitType.Builder:
-                    return UnitFactory.GetUnit(UnitType.Builder);
-                case UnitType.Cook:
-                    return UnitFactory.GetUnit(UnitType.Cook);
-                default:
-                    return null;
-            }
         }
     }
     class Program
@@ -281,10 +274,32 @@ namespace Home1_testing
         public static Random rand = new Random();
         static void Main(string[] args)
         {
-            foreach(var item in UnitFactory.GetUnits(10))
-            {
-                Console.WriteLine(item);
-            }
+            //ICollection<Unit> units = new List<Unit>();
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    UnitType type = (UnitType)rand.Next(0, 4);
+            //    switch (type)
+            //    {
+            //        case UnitType.Robot:
+            //            units.Add(UnitFactory.GetUnit(UnitType.Robot));
+            //            break;
+            //        case UnitType.Miner:
+            //            units.Add(UnitFactory.GetUnit(UnitType.Miner));
+            //            break;
+            //        case UnitType.Builder:
+            //            units.Add(UnitFactory.GetUnit(UnitType.Builder));
+            //            break;
+            //        case UnitType.Cook:
+            //            units.Add(UnitFactory.GetUnit(UnitType.Cook));
+            //            break;
+            //        default:
+            //            break;
+            //    }
+            //}
+            //foreach (var item in units)
+            //{
+            //    Console.WriteLine(item);
+            //}
         }
     }
 }
