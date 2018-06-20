@@ -29,6 +29,15 @@ namespace Home1_testing
     {
         public bool Gender { get; set; }
         public int Age { get; set; }
+
+        public Colonist() { }
+        public Colonist(string name, bool gender, int age)
+        {
+            Name = name;
+            Gender = gender;
+            Age = age;
+        }
+
         public override string ToString()
         {
             var genderString = Gender ? "male" : "female";
@@ -37,6 +46,13 @@ namespace Home1_testing
     }
     public class Miner : Colonist
     {
+        public Miner() { }
+        public Miner(string name, bool gender, int age)
+        {
+            Name = name;
+            Gender = gender;
+            Age = age;
+        }
         public static double Coefficient { get; set; } = 1;
         public override string ToString()
         {
@@ -45,6 +61,13 @@ namespace Home1_testing
     }
     public class Builder : Colonist
     {
+        public Builder() { }
+        public Builder(string name, bool gender, int age)
+        {
+            Name = name;
+            Gender = gender;
+            Age = age;
+        }
         public static double Coefficient { get; set; } = 0.8;
         public override string ToString()
         {
@@ -53,6 +76,13 @@ namespace Home1_testing
     }
     public class Cook : Colonist
     {
+        public Cook() { }
+        public Cook(string name, bool gender, int age)
+        {
+            Name = name;
+            Gender = gender;
+            Age = age;
+        }
         public static double Coefficient { get; set; } = 0.5;
         public override string ToString()
         {
@@ -78,25 +108,12 @@ namespace Home1_testing
     {
         private const int quantityUnits = 10;
         public ICollection<Unit> units = new List<Unit>();
-        private UnitType[] typeArr = new UnitType[quantityUnits]
-        {
-            UnitType.Builder,
-            UnitType.Miner,
-            UnitType.Cook,
-            UnitType.Miner,
-            UnitType.Robot,
-            UnitType.Cook,
-            UnitType.Builder,
-            UnitType.Robot,
-            UnitType.Miner,
-            UnitType.Cook
-        };
         public Colony()
         {
             for (int i = 0; i < quantityUnits; i++)
-            {                
-                //UnitType type = (UnitType)Program.rand.Next(0, 4);
-                switch (typeArr[i])
+            {
+                UnitType type = (UnitType)Program.rand.Next(0, 4);
+                switch (type)
                 {
                     case UnitType.Robot:
                         units.Add(UnitFactory.GetUnit(UnitType.Robot));
@@ -117,14 +134,17 @@ namespace Home1_testing
         }
         public int LocateSetters(ICollection<Unit> unitsToAdd)
         {
-            (units as List<Unit>).AddRange(unitsToAdd);
+            if(unitsToAdd != null)
+            {
+                (units as List<Unit>).AddRange(unitsToAdd);
+            }           
             return units.Count();
         }
         public int RemoteSetters(int count)
         {
             for (int i = 0; i < count; i++)
             {
-                if(units.Count() < 1)
+                if (units.Count() < 1)
                 {
                     return -1;
                 }
@@ -143,7 +163,7 @@ namespace Home1_testing
                     count--;
                 }
             }
-            if(count > 0)
+            if (count > 0)
             {
                 return -1;
             }
@@ -156,7 +176,7 @@ namespace Home1_testing
         public double CalculateProd(ICollection<Unit> units, int period)
         {
             double quantityProd = 0d;
-            if(units == null)
+            if (units == null)
             {
                 return -1;
             }
@@ -185,9 +205,12 @@ namespace Home1_testing
         {
             return units;
         }
-        public int CalculatorPopulations(ICollection<Unit> units, int period)
+        public int CalculatorPopulations(ICollection<Unit> units, int period, List<Config> configs)
         {
             ICollection<Unit> unitsTest = units;
+            RobotCreator robotCreator = new RobotCreator();
+            ColonistCreator colonistCreator = new ColonistCreator();
+
             for (int i = 0; i < period; i++)
             {
                 int men = unitsTest.OfType<Colonist>().Count(x => x.Gender == true);
@@ -205,8 +228,17 @@ namespace Home1_testing
                 {
                     quantityBabes = men;
                 }
-                UnitType type = (UnitType)Program.rand.Next(1, 4);
-                unitsTest.Add(UnitFactory.GetUnit(type));
+                for (int j = 0; j < quantityBabes; j++)
+                {
+                    if (configs[i] is ConfigRobot)
+                    {
+                        (unitsTest as List<Unit>).AddRange(robotCreator.FactoryMethod(configs[i]));
+                    }
+                    else if (configs[i] is ConfigColonist)
+                    {
+                        (unitsTest as List<Unit>).AddRange(colonistCreator.FactoryMethod(configs[i]));
+                    }
+                }
             }
             return unitsTest.Count();
         }
@@ -222,13 +254,84 @@ namespace Home1_testing
         {
             return Program.rand.Next(18, 30);
         }
-        public static string RandName()
+        public static string RandMaleName()
         {
             List<String> names = new List<string>
             {
-                "Sasha", "Ulya", "Vika", "Nick", "Dima", "Roma", "Lina", "Ostap", "Taras", "Anya"
+                "Sasha", "Nick", "Dima", "Roma", "Ostap"
             };
-            return names[Program.rand.Next(0, 10)];
+            return names[Program.rand.Next(0, 5)];
+        }
+        public static string RandFemaleName()
+        {
+            List<String> names = new List<string>
+            {
+                "Ulya", "Vika", "Lina", "Zina", "Anya"
+            };
+            return names[Program.rand.Next(0, 5)];
+        }
+    }
+
+    public abstract class Config { }
+
+    public class ConfigRobot : Config
+    {
+        public int QuantityInstance { get; set; }
+    }
+
+    public class ConfigColonist : Config
+    {
+        public Type Type { get; set; }
+        public int QuantityMale { get; set; }
+        public int QuantityFemale { get; set; }
+    }
+
+    public abstract class Creator
+    {
+        public abstract ICollection<Unit> FactoryMethod(Config config);
+    }
+
+    public class RobotCreator : Creator
+    {
+        public override ICollection<Unit> FactoryMethod(Config config)
+        {
+            List<Unit> robots = new List<Unit>();
+            int quantity = (config as ConfigRobot).QuantityInstance;
+            for (int i = 0; i < quantity; i++)
+            {
+                robots.Add(new Robot());
+            }
+            return robots;
+        }
+    }
+
+    public class ColonistCreator : Creator
+    {
+        public override ICollection<Unit> FactoryMethod(Config config)
+        {
+            List<Unit> colonists = new List<Unit>();
+            var configColonist = (config as ConfigColonist);
+            int quantityMale = configColonist.QuantityMale;
+            int quantityFemale = configColonist.QuantityFemale;
+            int totalQuantity = quantityMale + quantityFemale;
+
+            for (int i = 0; i < totalQuantity; i++)
+            {
+                var type = configColonist.Type;
+                object[] parameters;
+                if (quantityMale > 0)
+                {
+                    parameters = new object[3] { Generator.RandMaleName(), true, Generator.RandAge() };
+                    var colonistMale = (Unit)Activator.CreateInstance(type, parameters);
+                    colonists.Add(colonistMale);
+                    quantityMale--;
+                    continue;
+                }
+                parameters = new object[3] { Generator.RandMaleName(), false, Generator.RandAge() };
+                var colonistFemale = (Unit)Activator.CreateInstance(type, parameters);
+                colonists.Add(colonistFemale);
+            }
+            return colonists;
         }
     }
 
@@ -241,28 +344,28 @@ namespace Home1_testing
                 case UnitType.Robot:
                     return new Robot
                     {
-                        Name = Generator.RandName()
+                        Name = Generator.RandMaleName()
                     };
                 case UnitType.Miner:
                     return new Miner
                     {
+                        Name = Generator.RandMaleName(),
                         Gender = Generator.RandGender(),
-                        Age = Generator.RandAge(),
-                        Name = Generator.RandName()
+                        Age = Generator.RandAge()
                     };
                 case UnitType.Builder:
                     return new Builder
                     {
                         Gender = Generator.RandGender(),
                         Age = Generator.RandAge(),
-                        Name = Generator.RandName()
+                        Name = Generator.RandMaleName()
                     };
                 case UnitType.Cook:
                     return new Cook
                     {
                         Gender = Generator.RandGender(),
                         Age = Generator.RandAge(),
-                        Name = Generator.RandName()
+                        Name = Generator.RandFemaleName()
                     };
                 default:
                     return null;
@@ -274,32 +377,7 @@ namespace Home1_testing
         public static Random rand = new Random();
         static void Main(string[] args)
         {
-            //ICollection<Unit> units = new List<Unit>();
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    UnitType type = (UnitType)rand.Next(0, 4);
-            //    switch (type)
-            //    {
-            //        case UnitType.Robot:
-            //            units.Add(UnitFactory.GetUnit(UnitType.Robot));
-            //            break;
-            //        case UnitType.Miner:
-            //            units.Add(UnitFactory.GetUnit(UnitType.Miner));
-            //            break;
-            //        case UnitType.Builder:
-            //            units.Add(UnitFactory.GetUnit(UnitType.Builder));
-            //            break;
-            //        case UnitType.Cook:
-            //            units.Add(UnitFactory.GetUnit(UnitType.Cook));
-            //            break;
-            //        default:
-            //            break;
-            //    }
-            //}
-            //foreach (var item in units)
-            //{
-            //    Console.WriteLine(item);
-            //}
+
         }
     }
 }
